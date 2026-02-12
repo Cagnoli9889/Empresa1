@@ -3,56 +3,104 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Menú Premium</title>
+    <title>Menú Digital | Empresa 1</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <style>
-        :root { --oro: #d4af37; --fondo: #0f1215; --tarjeta: #1c2128; --texto: #e6edf3; }
-        body { font-family: 'Inter', system-ui, sans-serif; background-color: var(--fondo); color: var(--texto); margin: 0; }
-        header { padding: 3rem 1rem; text-align: center; background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?auto=format&fit=crop&w=800&q=80'); background-size: cover; background-position: center; border-bottom: 2px solid var(--oro); }
-        .container { max-width: 700px; margin: -20px auto 40px; padding: 0 1rem; }
-        .menu-item { background: var(--tarjeta); padding: 1.2rem; margin-bottom: 1rem; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #30363d; }
-        .info { flex: 1; padding-right: 15px; }
-        .info h3 { margin: 0 0 5px; color: var(--oro); font-size: 1.1rem; }
-        .info p { margin: 0; color: #8b949e; font-size: 0.9rem; line-height: 1.4; }
-        .precio { font-weight: bold; font-size: 1.2rem; color: white; background: #238636; padding: 5px 12px; border-radius: 20px; }
-        #loader { text-align: center; margin-top: 50px; font-weight: bold; }
+        :root {
+            --primario: #e67e22; /* Color naranja/gastronómico */
+            --fondo: #ffffff;
+            --texto: #2c3e50;
+            --gris-suave: #f8f9fa;
+        }
+        body { 
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+            background-color: var(--gris-suave); 
+            color: var(--texto); 
+            margin: 0; 
+            line-height: 1.6;
+        }
+        header { 
+            background: #1a1a1a; 
+            color: white; 
+            padding: 3rem 1rem; 
+            text-align: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        h1 { margin: 0; letter-spacing: 2px; font-size: 2.2rem; }
+        .sub-header { color: var(--primario); font-weight: bold; text-transform: uppercase; font-size: 0.9rem; }
+        
+        .container { 
+            max-width: 600px; 
+            margin: -30px auto 50px; 
+            padding: 0 15px;
+        }
+        
+        .menu-item { 
+            background: white; 
+            padding: 1.5rem; 
+            margin-bottom: 1rem; 
+            border-radius: 15px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: flex-start;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            transition: transform 0.2s;
+        }
+        .menu-item:hover { transform: translateY(-3px); }
+
+        .info { flex: 1; padding-right: 20px; }
+        .info h3 { margin: 0 0 8px 0; font-size: 1.2rem; color: #1a1a1a; }
+        .info p { margin: 0; color: #7f8c8d; font-size: 0.95rem; }
+        
+        .precio { 
+            font-weight: 800; 
+            font-size: 1.1rem; 
+            color: var(--primario); 
+            background: rgba(230, 126, 34, 0.1);
+            padding: 8px 12px;
+            border-radius: 10px;
+            white-space: nowrap;
+        }
+
+        #loader { text-align: center; padding: 50px; font-size: 1.2rem; }
+        footer { text-align: center; padding: 20px; font-size: 0.8rem; color: #bdc3c7; }
     </style>
 </head>
 <body>
 
 <header>
-    <h1 style="margin:0; font-size: 2.5rem;">MENÚ DIGITAL</h1>
-    <p style="color: var(--oro); letter-spacing: 2px;">EXPERIENCIA GOURMET</p>
+    <p class="sub-header">Bienvenidos</p>
+    <h1>NUESTRO MENÚ</h1>
 </header>
 
 <div class="container">
-    <div id="loader">Cargando menú...</div>
+    <div id="loader">Consultando la cocina...</div>
     <div id="menu-contenedor"></div>
 </div>
 
+<footer>
+    &copy; 2024 Menú Inteligente - Actualizado vía Google Sheets
+</footer>
+
 <script>
-    // PEGA AQUÍ EL LINK CSV DE LA PESTAÑA CORRESPONDIENTE A ESTA EMPRESA
+    // Tu URL proporcionada
     const URL_CSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRLnIUyLj1kUXghzd-2MbQjeKLbSv5tCGe7mGgTrn9Z2i8TsHgiCRCOWtiAPJ2eqn4d_J2P5tVLz-eb/pub?gid=0&single=true&output=csv';
 
-    async function cargarDatos() {
-        try {
-            const res = await fetch(URL_CSV);
-            const data = await res.text();
-            
-            // Dividimos por filas y eliminamos la primera (cabecera)
-            const filas = data.split(/\r?\n/).filter(fila => fila.trim() !== "").slice(1); 
-            const contenedor = document.getElementById('menu-contenedor');
-            let html = '';
+    function cargarMenu() {
+        Papa.parse(URL_CSV, {
+            download: true,
+            header: true, // Usa la primera fila como nombres de columna
+            skipEmptyLines: true,
+            complete: function(results) {
+                const items = results.data;
+                const contenedor = document.getElementById('menu-contenedor');
+                let html = '';
 
-            filas.forEach(fila => {
-                // Esta "Expresión Regular" es la clave: 
-                // Separa por comas pero ignora las comas que están dentro de comillas
-                const columnas = fila.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g);
-                
-                if (columnas && columnas.length >= 2) {
-                    // Limpiamos las comillas que Google añade automáticamente al texto con espacios
-                    const nombre = columnas[0].replace(/^"|"$/g, "").trim();
-                    const precio = columnas[1].replace(/^"|"$/g, "").trim();
-                    const desc = columnas[2] ? columnas[2].replace(/^"|"$/g, "").trim() : "";
+                items.forEach(item => {
+                    // Accedemos usando los nombres exactos de tu Excel: Producto, Precio, Descripción
+                    const nombre = item['Producto'] || 'Sin nombre';
+                    const precio = item['Precio'] || '0';
+                    const desc = item['Descripción'] || '';
 
                     html += `
                         <div class="menu-item">
@@ -61,19 +109,22 @@
                                 <p>${desc}</p>
                             </div>
                             <div class="precio">$${precio}</div>
-                        </div>`;
-                }
-            });
+                        </div>
+                    `;
+                });
 
-            document.getElementById('loader').style.display = 'none';
-            contenedor.innerHTML = html;
-        } catch (e) {
-            document.getElementById('loader').innerText = "Error al conectar con el servidor.";
-            console.error(e);
-        }
+                document.getElementById('loader').style.display = 'none';
+                contenedor.innerHTML = html;
+            },
+            error: function() {
+                document.getElementById('loader').innerHTML = "Hubo un error al cargar el menú.";
+            }
+        });
     }
 
-    cargarDatos();
+    // Ejecutar al cargar la página
+    window.onload = cargarMenu;
 </script>
+
 </body>
 </html>
