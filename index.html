@@ -38,19 +38,21 @@
             const res = await fetch(URL_CSV);
             const data = await res.text();
             
-            // Esta función "limpia" el CSV para que las comas no rompan el texto
-            const filas = data.split(/\r?\n/).slice(1); 
+            // Dividimos por filas y eliminamos la primera (cabecera)
+            const filas = data.split(/\r?\n/).filter(fila => fila.trim() !== "").slice(1); 
             const contenedor = document.getElementById('menu-contenedor');
             let html = '';
 
             filas.forEach(fila => {
-                // Expresión regular para separar por comas pero ignorar comas dentro de comillas
+                // Esta "Expresión Regular" es la clave: 
+                // Separa por comas pero ignora las comas que están dentro de comillas
                 const columnas = fila.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g);
                 
                 if (columnas && columnas.length >= 2) {
-                    const nombre = columnas[0].replace(/"/g, "");
-                    const precio = columnas[1].replace(/"/g, "");
-                    const desc = columnas[2] ? columnas[2].replace(/"/g, "") : "";
+                    // Limpiamos las comillas que Google añade automáticamente al texto con espacios
+                    const nombre = columnas[0].replace(/^"|"$/g, "").trim();
+                    const precio = columnas[1].replace(/^"|"$/g, "").trim();
+                    const desc = columnas[2] ? columnas[2].replace(/^"|"$/g, "").trim() : "";
 
                     html += `
                         <div class="menu-item">
@@ -67,6 +69,7 @@
             contenedor.innerHTML = html;
         } catch (e) {
             document.getElementById('loader').innerText = "Error al conectar con el servidor.";
+            console.error(e);
         }
     }
 
