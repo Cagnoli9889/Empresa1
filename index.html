@@ -3,72 +3,74 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Menú Digital Profesional</title>
+    <title>Menú Premium</title>
     <style>
-        :root { --oro: #c5a059; --oscuro: #1a1a1a; }
-        body { font-family: 'Segoe UI', sans-serif; background-color: #f9f9f9; margin: 0; color: var(--oscuro); }
-        header { background: var(--oscuro); color: white; text-align: center; padding: 2rem; }
-        .container { max-width: 800px; margin: 2rem auto; padding: 0 1rem; }
-        .menu-item { background: white; border-radius: 8px; padding: 1.5rem; margin-bottom: 1rem; 
-                     display: flex; justify-content: space-between; align-items: center;
-                     box-shadow: 0 2px 5px rgba(0,0,0,0.05); border-left: 5px solid var(--oro); }
-        .info h3 { margin: 0; color: var(--oscuro); text-transform: uppercase; letter-spacing: 1px; }
-        .info p { margin: 5px 0 0; color: #666; font-style: italic; font-size: 0.9rem; }
-        .precio { font-size: 1.2rem; font-weight: bold; color: var(--oro); white-space: nowrap; margin-left: 10px; }
-        #loader { text-align: center; padding: 2rem; font-size: 1.2rem; color: var(--oro); }
+        :root { --oro: #d4af37; --fondo: #0f1215; --tarjeta: #1c2128; --texto: #e6edf3; }
+        body { font-family: 'Inter', system-ui, sans-serif; background-color: var(--fondo); color: var(--texto); margin: 0; }
+        header { padding: 3rem 1rem; text-align: center; background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?auto=format&fit=crop&w=800&q=80'); background-size: cover; background-position: center; border-bottom: 2px solid var(--oro); }
+        .container { max-width: 700px; margin: -20px auto 40px; padding: 0 1rem; }
+        .menu-item { background: var(--tarjeta); padding: 1.2rem; margin-bottom: 1rem; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #30363d; }
+        .info { flex: 1; padding-right: 15px; }
+        .info h3 { margin: 0 0 5px; color: var(--oro); font-size: 1.1rem; }
+        .info p { margin: 0; color: #8b949e; font-size: 0.9rem; line-height: 1.4; }
+        .precio { font-weight: bold; font-size: 1.2rem; color: white; background: #238636; padding: 5px 12px; border-radius: 20px; }
+        #loader { text-align: center; margin-top: 50px; font-weight: bold; }
     </style>
 </head>
 <body>
 
 <header>
-    <h1>NUESTRO MENÚ</h1>
-    <p>Calidad en cada bocado</p>
+    <h1 style="margin:0; font-size: 2.5rem;">MENÚ DIGITAL</h1>
+    <p style="color: var(--oro); letter-spacing: 2px;">EXPERIENCIA GOURMET</p>
 </header>
 
 <div class="container">
-    <div id="loader">Cargando delicias...</div>
+    <div id="loader">Cargando menú...</div>
     <div id="menu-contenedor"></div>
 </div>
 
 <script>
-    // 1. PEGA AQUÍ TU URL DE GOOGLE SHEETS (CSV)
-    const URL_CSV = 'https://docs.google.com/spreadsheets/d/1-8FWnDA-vkR9_k13HmXirIMco33yZcfAGG5HeDYk1sk/edit?usp=sharing'; 
+    // PEGA AQUÍ EL LINK CSV DE LA PESTAÑA CORRESPONDIENTE A ESTA EMPRESA
+    const URL_CSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRLnIUyLj1kUXghzd-2MbQjeKLbSv5tCGe7mGgTrn9Z2i8TsHgiCRCOWtiAPJ2eqn4d_J2P5tVLz-eb/pub?gid=0&single=true&output=csv';
 
-    async function obtenerDatos() {
+    async function cargarDatos() {
         try {
-            const respuesta = await fetch(URL_CSV);
-            const texto = await respuesta.text();
+            const res = await fetch(URL_CSV);
+            const data = await res.text();
             
-            // Convertir CSV a objetos
-            const filas = texto.split('\n').slice(1); // Quitamos la cabecera
+            // Esta función "limpia" el CSV para que las comas no rompan el texto
+            const filas = data.split(/\r?\n/).slice(1); 
             const contenedor = document.getElementById('menu-contenedor');
             let html = '';
 
-            filas.forEach(linea => {
-                const columnas = linea.split(',');
-                if(columnas.length >= 2) {
+            filas.forEach(fila => {
+                // Expresión regular para separar por comas pero ignorar comas dentro de comillas
+                const columnas = fila.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g);
+                
+                if (columnas && columnas.length >= 2) {
+                    const nombre = columnas[0].replace(/"/g, "");
+                    const precio = columnas[1].replace(/"/g, "");
+                    const desc = columnas[2] ? columnas[2].replace(/"/g, "") : "";
+
                     html += `
                         <div class="menu-item">
                             <div class="info">
-                                <h3>${columnas[0]}</h3>
-                                <p>${columnas[2] || ''}</p>
+                                <h3>${nombre}</h3>
+                                <p>${desc}</p>
                             </div>
-                            <div class="precio">$${columnas[1]}</div>
-                        </div>
-                    `;
+                            <div class="precio">$${precio}</div>
+                        </div>`;
                 }
             });
 
             document.getElementById('loader').style.display = 'none';
             contenedor.innerHTML = html;
-        } catch (error) {
-            document.getElementById('loader').innerHTML = 'Error al cargar el menú.';
-            console.error(error);
+        } catch (e) {
+            document.getElementById('loader').innerText = "Error al conectar con el servidor.";
         }
     }
 
-    obtenerDatos();
+    cargarDatos();
 </script>
-
 </body>
 </html>
