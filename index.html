@@ -3,37 +3,125 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Catálogo Inteligente Pro</title>
+    <title>Catálogo Pro</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
-        :root { --primary: #25d366; --dark: #121b22; --bg: #f0f2f5; }
-        body { font-family: 'Poppins', sans-serif; background: var(--bg); color: var(--dark); margin: 0; }
+        :root { --accent: #25d366; --dark: #121b22; --bg: #f0f2f5; }
+        body { font-family: sans-serif; background: var(--bg); margin: 0; color: var(--dark); }
+        header { background: white; padding: 20px; text-align: center; border-bottom: 2px solid var(--accent); }
         
-        header { background: white; padding: 20px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        h1 { margin: 0; font-size: 1.5rem; color: var(--dark); }
+        /* Contenedores */
+        .container { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px; padding: 15px; max-width: 900px; margin: auto; }
+        .filters { display: flex; gap: 10px; overflow-x: auto; padding: 15px; justify-content: center; }
+        
+        /* Tarjetas */
+        .card { background: white; border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .card img { width: 100%; height: 150px; object-fit: cover; background: #ddd; }
+        .card-body { padding: 10px; flex-grow: 1; }
+        .price { font-weight: bold; color: var(--accent); font-size: 1.2rem; }
+        
+        /* Botón */
+        .btn-ws { display: block; background: var(--accent); color: white; text-align: center; padding: 8px; text-decoration: none; border-radius: 5px; margin-top: 10px; font-weight: bold; font-size: 0.8rem; }
+        
+        /* Estados */
+        #status { text-align: center; padding: 20px; color: #666; }
+        .filter-btn { border: none; padding: 8px 15px; border-radius: 20px; cursor: pointer; background: white; }
+        .active { background: var(--dark); color: white; }
+    </style>
+</head>
+<body>
 
-        /* Filtros */
-        .filter-wrapper { position: sticky; top: 0; background: var(--bg); padding: 10px 0; z-index: 100; }
-        .filters { display: flex; gap: 10px; overflow-x: auto; padding: 5px 15px; scrollbar-width: none; }
-        .filters::-webkit-scrollbar { display: none; }
-        .filter-btn { 
-            border: none; padding: 8px 20px; border-radius: 25px; background: white; 
-            color: var(--dark); cursor: pointer; white-space: nowrap; box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-            transition: 0.3s; font-size: 0.9rem;
-        }
-        .filter-btn.active { background: var(--dark); color: white; }
+<header>
+    <h1>CATÁLOGO ONLINE</h1>
+</header>
 
-        /* Grid */
-        .container { 
-            display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); 
-            gap: 15px; padding: 15px; max-width: 900px; margin: auto; 
+<div class="filters" id="filter-bar"></div>
+
+<div id="status">Cargando datos desde Excel...</div>
+
+<div class="container" id="grid"></div>
+
+<script>
+    // 1. PEGA AQUÍ TU ENLACE CSV
+    const URL_CSV = 'TU_URL_AQUI'; 
+
+    let storeData = [];
+
+    // Función para arreglar links de Drive
+    function fixDriveUrl(url) {
+        if (!url) return '';
+        if (url.includes('drive.google.com')) {
+            const id = url.split('/d/')[1]?.split('/')[0] || url.split('id=')[1];
+            return `https://docs.google.com/uc?export=view&id=${id}`;
+        }
+        return url;
+    }
+
+    function init() {
+        if (URL_CSV === 'TU_URL_AQUI') {
+            document.getElementById('status').innerHTML = "❌ Error: No has pegado el link de tu Excel en el código.";
+            return;
         }
 
-        .card { 
-            background: white; border-radius: 15px; overflow: hidden; 
-            display: flex; flex-direction: column; box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-        }
-        .card img { width: 100%; height: 160px; object-fit: cover; background: #e5e5e5; }
-        .card-body { padding: 12px; flex-grow: 1; display: flex; flex-direction: column; }
-        .card-body h3 { margin: 0; font-size: 1rem;
+        Papa.parse(URL_CSV, {
+            download: true,
+            header: true,
+            skipEmptyLines: true,
+            complete: function(results) {
+                console.log("Datos recibidos:", results.data); // Esto ayuda a ver errores en consola
+                storeData = results.data;
+                
+                if (storeData.length === 0) {
+                    document.getElementById('status').innerHTML = "⚠️ El Excel parece estar vacío.";
+                    return;
+                }
+
+                document.getElementById('status').style.display = 'none';
+                renderFilters(storeData);
+                renderGallery(storeData);
+            },
+            error: function(err) {
+                document.getElementById('status').innerHTML = "❌ Error al conectar con Google Sheets. Revisa que esté 'Publicado en la Web'.";
+            }
+        });
+    }
+
+    function renderFilters(data) {
+        const categories = ['Todos', ...new Set(data.map(i => i.Categoría).filter(c => c))];
+        const bar = document.getElementById('filter-bar');
+        bar.innerHTML = categories.map(cat => `
+            <button class="filter-btn ${cat === 'Todos' ? 'active' : ''}" onclick="filterBy('${cat}', this)">${cat}</button>
+        `).join('');
+    }
+
+    function renderGallery(data) {
+        const grid = document.getElementById('grid');
+        grid.innerHTML = data.map(item => {
+            const img = fixDriveUrl(item.Imagen);
+            const wsLink = `https://wa.me/${item.WhatsApp}?text=Hola, quiero: ${item.Producto}`;
+            
+            return `
+                <div class="card">
+                    ${item.Imagen ? `<img src="${img}">` : '<div style="height:150px; background:#eee"></div>'}
+                    <div class="card-body">
+                        <h3 style="margin:0; font-size:1rem;">${item.Producto || 'Sin nombre'}</h3>
+                        <p style="font-size:0.8rem; color:#666">${item.Descripción || ''}</p>
+                        <div class="price">$${item.Precio || '0'}</div>
+                        <a href="${wsLink}" target="_blank" class="btn-ws">PEDIR WHATSAPP</a>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    function filterBy(cat, btn) {
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const filtered = cat === 'Todos' ? storeData : storeData.filter(i => i.Categoría === cat);
+        renderGallery(filtered);
+    }
+
+    window.onload = init;
+</script>
+</body>
+</html>
