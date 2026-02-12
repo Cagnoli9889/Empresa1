@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Menú Inteligente</title>
+    <style>
+        body { font-family: sans-serif; max-width: 500px; margin: auto; padding: 20px; }
+        .item { display: flex; justify-content: space-between; border-bottom: 1px dashed #ccc; padding: 10px 0; }
+        .precio { font-weight: bold; color: green; }
+    </style>
+</head>
+<body>
+    <h1>Nuestro Menú</h1>
+    <div id="contenedor-menu">Cargando platos...</div>
+
+    <script>
+        // Sustituye con tu URL de Google Sheets (Publicada como CSV)
+        const SHEET_URL = 'TU_URL_DE_GOOGLE_SHEET_CSV';
+
+        async function cargarMenu() {
+            const res = await fetch(SHEET_URL);
+            const data = await res.text();
+            const filas = data.split('\n').slice(1); // Ignorar cabecera
+            
+            let html = '';
+            filas.forEach(fila => {
+                const columnas = fila.split(',');
+                if(columnas.length >= 2) {
+                    html += `<div class="item">
+                                <span>${columnas[0]}</span>
+                                <span class="precio">$${columnas[1]}</span>
+                             </div>`;
+                }
+            });
+            document.getElementById('contenedor-menu').innerHTML = html;
+        }
+        cargarMenu();
+    </script>
+</body>
+</html>
