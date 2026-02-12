@@ -2,39 +2,73 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Menú Inteligente</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Menú Digital Profesional</title>
     <style>
-        body { font-family: sans-serif; max-width: 500px; margin: auto; padding: 20px; }
-        .item { display: flex; justify-content: space-between; border-bottom: 1px dashed #ccc; padding: 10px 0; }
-        .precio { font-weight: bold; color: green; }
+        :root { --oro: #c5a059; --oscuro: #1a1a1a; }
+        body { font-family: 'Segoe UI', sans-serif; background-color: #f9f9f9; margin: 0; color: var(--oscuro); }
+        header { background: var(--oscuro); color: white; text-align: center; padding: 2rem; }
+        .container { max-width: 800px; margin: 2rem auto; padding: 0 1rem; }
+        .menu-item { background: white; border-radius: 8px; padding: 1.5rem; margin-bottom: 1rem; 
+                     display: flex; justify-content: space-between; align-items: center;
+                     box-shadow: 0 2px 5px rgba(0,0,0,0.05); border-left: 5px solid var(--oro); }
+        .info h3 { margin: 0; color: var(--oscuro); text-transform: uppercase; letter-spacing: 1px; }
+        .info p { margin: 5px 0 0; color: #666; font-style: italic; font-size: 0.9rem; }
+        .precio { font-size: 1.2rem; font-weight: bold; color: var(--oro); white-space: nowrap; margin-left: 10px; }
+        #loader { text-align: center; padding: 2rem; font-size: 1.2rem; color: var(--oro); }
     </style>
 </head>
 <body>
-    <h1>Nuestro Menú</h1>
-    <div id="contenedor-menu">Cargando platos...</div>
 
-    <script>
-        // Sustituye con tu URL de Google Sheets (Publicada como CSV)
-        const SHEET_URL = 'TU_URL_DE_GOOGLE_SHEET_CSV';
+<header>
+    <h1>NUESTRO MENÚ</h1>
+    <p>Calidad en cada bocado</p>
+</header>
 
-        async function cargarMenu() {
-            const res = await fetch(SHEET_URL);
-            const data = await res.text();
-            const filas = data.split('\n').slice(1); // Ignorar cabecera
+<div class="container">
+    <div id="loader">Cargando delicias...</div>
+    <div id="menu-contenedor"></div>
+</div>
+
+<script>
+    // 1. PEGA AQUÍ TU URL DE GOOGLE SHEETS (CSV)
+    const URL_CSV = 'https://docs.google.com/spreadsheets/d/1-8FWnDA-vkR9_k13HmXirIMco33yZcfAGG5HeDYk1sk/edit?usp=sharing'; 
+
+    async function obtenerDatos() {
+        try {
+            const respuesta = await fetch(URL_CSV);
+            const texto = await respuesta.text();
             
+            // Convertir CSV a objetos
+            const filas = texto.split('\n').slice(1); // Quitamos la cabecera
+            const contenedor = document.getElementById('menu-contenedor');
             let html = '';
-            filas.forEach(fila => {
-                const columnas = fila.split(',');
+
+            filas.forEach(linea => {
+                const columnas = linea.split(',');
                 if(columnas.length >= 2) {
-                    html += `<div class="item">
-                                <span>${columnas[0]}</span>
-                                <span class="precio">$${columnas[1]}</span>
-                             </div>`;
+                    html += `
+                        <div class="menu-item">
+                            <div class="info">
+                                <h3>${columnas[0]}</h3>
+                                <p>${columnas[2] || ''}</p>
+                            </div>
+                            <div class="precio">$${columnas[1]}</div>
+                        </div>
+                    `;
                 }
             });
-            document.getElementById('contenedor-menu').innerHTML = html;
+
+            document.getElementById('loader').style.display = 'none';
+            contenedor.innerHTML = html;
+        } catch (error) {
+            document.getElementById('loader').innerHTML = 'Error al cargar el menú.';
+            console.error(error);
         }
-        cargarMenu();
-    </script>
+    }
+
+    obtenerDatos();
+</script>
+
 </body>
 </html>
